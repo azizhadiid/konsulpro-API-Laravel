@@ -7,7 +7,7 @@ Route::get('/', function () {
 });
 
 
-Route::get('/ping', function () {
+Route::get('/api/ping', function () {
     return response()->json([
         'message' => 'API Laravel aktif 🚀'
     ]);
