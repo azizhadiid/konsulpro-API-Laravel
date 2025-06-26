@@ -11,9 +11,20 @@ class UserProfileController extends Controller
     {
         $user = $request->user();
         $profile = $user->profile;
+
+        $profileData = $profile ? $profile->toArray() : [];
+
+        // Tambahkan URL gambar profil (jika ada)
+        if ($profile && $profile->foto) {
+            $profileData['foto_url'] = asset('img/profile/user/' . $profile->foto);
+        } else {
+            $profileData['foto_url'] = null;
+        }
+
         return response()->json([
             'message' => 'Data profil ditemukan.',
-            'profile' => $profile
+            'nama' => $user->name, // nama dari tabel users
+            ...$profileData // spread langsung agar langsung terbaca di Next.js
         ]);
     }
 
@@ -32,20 +43,27 @@ class UserProfileController extends Controller
 
         $user = $request->user();
 
+        // Cek apakah user sudah punya profil, kalau belum buat baru
         $profile = $user->profile ?? new UserProfile(['user_id' => $user->id]);
 
         if ($request->hasFile('foto')) {
             $file = $request->file('foto');
             $filename = time() . '_' . $file->getClientOriginalName();
-            $file->move(public_path('uploads'), $filename);
+
+            // Pindahkan ke folder img/profile/user
+            $file->move(public_path('img/profile/user'), $filename);
             $data['foto'] = $filename;
         }
 
         $profile->fill($data)->save();
 
+        // Tambahkan foto_url saat response
+        $profileData = $profile->toArray();
+        $profileData['foto_url'] = $profile->foto ? asset('img/profile/user/' . $profile->foto) : null;
+
         return response()->json([
             'message' => 'Profil berhasil diperbarui',
-            'profile' => $profile
+            ...$profileData
         ]);
     }
 }
