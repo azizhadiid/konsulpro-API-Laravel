@@ -12,3 +12,7 @@ Route::get('/api/ping', function () {
         'message' => 'API Laravel aktif 🚀'
     ]);
 });
+
+Route::get('/password/reset/{token}', function ($token) {
+    return redirect(config('app.frontend_url') . '/auth/reset?token=' . $token . '&email=' . request('email'));
+})->name('password.reset');
