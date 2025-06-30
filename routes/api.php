@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ContactController;
+use App\Http\Controllers\KonsultasiController;
 use App\Http\Controllers\UserProfileController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -16,6 +18,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/profile', [UserProfileController::class, 'update']);
 });
 
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/user', function (Request $request) {
+        return $request->user();
+    });
+    Route::post('/send-contact-email', [ContactController::class, 'sendContactEmail']);
+});
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/konsultasi', [KonsultasiController::class, 'index']);
+    Route::post('/konsultasi', [KonsultasiController::class, 'store']);
+});
 
 Route::middleware('auth:sanctum')->post('/logout', function (Request $request) {
     $request->user()->currentAccessToken()->delete();
