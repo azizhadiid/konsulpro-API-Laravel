@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ArtikelController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\KonsultasiController;
@@ -16,6 +17,8 @@ Route::post('/reset-password', [AuthController::class, 'reset']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profile', [UserProfileController::class, 'show']);
     Route::post('/profile', [UserProfileController::class, 'update']);
+
+    Route::post('/artikels', [ArtikelController::class, 'store']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -34,7 +37,3 @@ Route::middleware('auth:sanctum')->post('/logout', function (Request $request) {
     $request->user()->currentAccessToken()->delete();
     return response()->json(['message' => 'Logged out successfully']);
 });
-
-// Route::get('/user', function (Request $request) {
-//     return $request->user();
-// })->middleware('auth:sanctum');
