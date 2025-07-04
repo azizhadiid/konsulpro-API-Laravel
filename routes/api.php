@@ -18,7 +18,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profile', [UserProfileController::class, 'show']);
     Route::post('/profile', [UserProfileController::class, 'update']);
 
+    Route::get('/artikels', [ArtikelController::class, 'index']);
     Route::post('/artikels', [ArtikelController::class, 'store']);
+    Route::get('/artikels/{id}', [ArtikelController::class, 'show']); // Untuk mengambil data 1 artikel
+    Route::put('/artikels/{id}', [ArtikelController::class, 'update']); // Untuk update, menggunakan POST dengan _method=PUT
+    Route::delete('/artikels/{id}', [ArtikelController::class, 'destroy']); // Untuk menghapus artikel
 });
 
 Route::middleware('auth:sanctum')->group(function () {

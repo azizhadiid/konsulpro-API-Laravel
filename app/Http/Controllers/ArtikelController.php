@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Artikel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 
 class ArtikelController extends Controller
@@ -12,9 +13,35 @@ class ArtikelController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
+        // Pastikan user terautentikasi
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized. User not logged in.'], 401);
+        }
+
+        // Ambil SEMUA artikel yang terkait dengan user_id yang sedang login
+        // Asumsi ada relationship 'hasMany' dari User ke Artikel di model User.
+        // Di model User.php, tambahkan:
+        // public function artikels() {
+        //     return $this->hasMany(Artikel::class);
+        // }
+        $artikels = $user->artikel()->latest()->get(); // Mengambil semua artikel, terbaru di atas
+
+        // Format data artikel, tambahkan foto_url untuk setiap artikel
+        $formattedArtikels = $artikels->map(function ($artikel) {
+            $artikelData = $artikel->toArray();
+            $artikelData['foto_url'] = $artikel->foto ? asset('img/artikel/' . $artikel->foto) : null;
+            return $artikelData;
+        });
+
+        return response()->json([
+            'message' => 'Daftar Artikel ditemukan.',
+            'nama_user' => $user->name, // Nama user yang login
+            'artikels' => $formattedArtikels // Mengembalikan array dari artikel yang sudah diformat
+        ], 200);
     }
 
     /**
@@ -95,7 +122,24 @@ class ArtikelController extends Controller
      */
     public function show(string $id)
     {
-        //
+        // Temukan artikel berdasarkan ID
+        $artikel = Artikel::find($id);
+
+        // Jika artikel tidak ditemukan, kembalikan response 404
+        if (!$artikel) {
+            return response()->json(['message' => 'Artikel not found.'], 404);
+        }
+
+        // Opsional: Pastikan hanya user pemilik yang bisa melihat/mengedit artikelnya sendiri
+        // if ($artikel->user_id !== Auth::id()) {
+        //     return response()->json(['message' => 'Unauthorized to view this article.'], 403);
+        // }
+
+        // Tambahkan foto_url untuk kemudahan di frontend
+        $artikel->foto_url = $artikel->foto ? asset('img/artikel/' . $artikel->foto) : null;
+
+        // Kembalikan data artikel
+        return response()->json(['artikel' => $artikel], 200);
     }
 
     /**
@@ -111,7 +155,83 @@ class ArtikelController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        // Temukan artikel yang akan diperbarui
+        $artikel = Artikel::find($id);
+
+        if (!$artikel) {
+            return response()->json(['message' => 'Artikel not found.'], 404);
+        }
+
+        // Opsional: Pastikan hanya user pemilik yang bisa mengedit artikelnya sendiri
+        // Jika Anda menggunakan Passport/Sanctum dan user_id di tabel artikel, ini penting
+        if ($artikel->user_id !== Auth::id()) {
+            return response()->json(['message' => 'Unauthorized to update this article.'], 403);
+        }
+
+        // 1. Validasi Request
+        $validatedData = $request->validate([
+            'judul' => 'required|string|max:255',
+            'deskripsi' => 'nullable|string',
+            'kategori' => 'required|string|max:255',
+            // Pastikan 'tag' juga divalidasi karena ada di frontend
+            'tanggal_publish' => 'required|date',
+            // 'foto' bisa nullable jika tidak ada perubahan, atau 'sometimes' jika hanya diisi saat ada file
+            // 'foto' => 'sometimes|nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Gunakan 'sometimes' jika field ini hanya dikirim saat ada perubahan
+            // Atau jika selalu dikirim tapi bisa null (seperti yang Anda pakai sekarang):
+            'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif',
+        ]);
+
+        // 2. Penanganan Upload Gambar
+        $oldFoto = $artikel->foto; // Simpan nama foto lama
+
+        if ($request->hasFile('foto')) {
+            // Ada gambar baru di-upload
+
+            // Hapus gambar lama jika ada
+            if ($oldFoto && File::exists(public_path('img/artikel/' . $oldFoto))) {
+                File::delete(public_path('img/artikel/' . $oldFoto));
+            }
+
+            $gambar = $request->file('foto');
+            // Pastikan nama file unik untuk menghindari konflik
+            $gambarNama = time() . '_' . uniqid() . '.' . $gambar->getClientOriginalExtension();
+            $destinationPath = public_path('img/artikel');
+
+            // Pastikan folder tujuan ada
+            if (!File::exists($destinationPath)) {
+                File::makeDirectory($destinationPath, 0755, true);
+            }
+
+            $gambar->move($destinationPath, $gambarNama);
+            $artikel->foto = $gambarNama; // Update nama foto di model
+        } elseif ($request->input('foto_changed_to_null')) {
+            // Logika untuk menghapus gambar yang sudah ada jika frontend mengirimkan sinyal
+            // bahwa gambar harus dihapus (misal: user menghapus gambar di form)
+            // Anda perlu menambahkan input tersembunyi di frontend, misal <input type="hidden" name="foto_changed_to_null" value="true/false">
+            if ($oldFoto && File::exists(public_path('img/artikel/' . $oldFoto))) {
+                File::delete(public_path('img/artikel/' . $oldFoto));
+            }
+            $artikel->foto = null; // Set foto menjadi null di database
+        }
+        // Jika tidak ada file baru di-upload dan tidak ada indikasi untuk menghapus,
+        // maka foto yang sudah ada akan dipertahankan (tidak diubah).
+
+        // 3. Perbarui data artikel
+        $artikel->judul = $validatedData['judul'];
+        $artikel->deskripsi = $validatedData['deskripsi'];
+        $artikel->kategori = $validatedData['kategori'];
+        // Pastikan 'tag' juga diperbarui
+        $artikel->tanggal_publish = $validatedData['tanggal_publish'];
+
+        $artikel->save(); // Simpan perubahan ke database
+
+        // Tambahkan foto_url untuk respons agar frontend bisa langsung menampilkannya
+        $artikel->foto_url = $artikel->foto ? asset('img/artikel/' . $artikel->foto) : null;
+
+        return response()->json([
+            'message' => 'Artikel berhasil diperbarui!',
+            'artikel' => $artikel
+        ], 200); // 200 OK untuk update
     }
 
     /**
@@ -119,6 +239,28 @@ class ArtikelController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $artikel = Artikel::find($id);
+
+        if (!$artikel) {
+            return response()->json(['message' => 'Artikel not found.'], 404);
+        }
+
+        // Opsional: Pastikan hanya user pemilik yang bisa menghapus artikelnya sendiri
+        if ($artikel->user_id !== Auth::id()) {
+            return response()->json(['message' => 'Unauthorized to delete this article.'], 403);
+        }
+
+        // Hapus file gambar terkait dari server
+        if ($artikel->foto && file_exists(public_path('img/artikel/' . $artikel->foto))) {
+            unlink(public_path('img/artikel/' . $artikel->foto));
+        }
+        // Atau jika menggunakan Storage Facade:
+        // if ($artikel->foto && Storage::disk('public')->exists('img/artikel/' . $artikel->foto)) {
+        //     Storage::disk('public')->delete('img/artikel/' . $artikel->foto);
+        // }
+
+        $artikel->delete(); // Hapus artikel dari database
+
+        return response()->json(['message' => 'Artikel berhasil dihapus!'], 200); // Atau 204 No Content
     }
 }
