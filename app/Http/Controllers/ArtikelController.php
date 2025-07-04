@@ -15,33 +15,40 @@ class ArtikelController extends Controller
      */
     public function index(Request $request)
     {
-        // Pastikan user terautentikasi
-        $user = $request->user();
-
-        if (!$user) {
-            return response()->json(['message' => 'Unauthorized. User not logged in.'], 401);
+        // Mendapatkan token untuk otentikasi (jika diperlukan di sini)
+        $token = $request->bearerToken();
+        if (!$token) {
+            // Jika Anda menggunakan middleware auth:sanctum di route, ini mungkin tidak perlu
+            // Tapi baik untuk penanganan error di controller juga
+            return response()->json(['message' => 'Unauthenticated.'], 401);
         }
 
-        // Ambil SEMUA artikel yang terkait dengan user_id yang sedang login
-        // Asumsi ada relationship 'hasMany' dari User ke Artikel di model User.
-        // Di model User.php, tambahkan:
-        // public function artikels() {
-        //     return $this->hasMany(Artikel::class);
-        // }
-        $artikels = $user->artikel()->latest()->get(); // Mengambil semua artikel, terbaru di atas
+        // Dapatkan parameter dari request
+        $perPage = $request->input('per_page', 10); // Default 10 item per halaman
+        $search = $request->input('search'); // Keyword pencarian
 
-        // Format data artikel, tambahkan foto_url untuk setiap artikel
-        $formattedArtikels = $artikels->map(function ($artikel) {
-            $artikelData = $artikel->toArray();
-            $artikelData['foto_url'] = $artikel->foto ? asset('img/artikel/' . $artikel->foto) : null;
-            return $artikelData;
+        // Mulai query Artikel
+        $query = Artikel::query();
+
+        // Terapkan filter pencarian jika ada
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('judul', 'like', '%' . $search . '%')
+                    ->orWhere('kategori', 'like', '%' . $search . '%'); // Cari juga di kolom tag
+            });
+        }
+
+        // Terapkan paginasi
+        $artikels = $query->paginate($perPage);
+
+        // Tambahkan foto_url ke setiap artikel dalam koleksi paginated
+        $artikels->getCollection()->transform(function ($artikel) {
+            $artikel->foto_url = $artikel->foto ? asset('img/artikel/' . $artikel->foto) : null;
+            return $artikel;
         });
 
-        return response()->json([
-            'message' => 'Daftar Artikel ditemukan.',
-            'nama_user' => $user->name, // Nama user yang login
-            'artikels' => $formattedArtikels // Mengembalikan array dari artikel yang sudah diformat
-        ], 200);
+        // Response dengan data paginasi
+        return response()->json($artikels, 200);
     }
 
     /**
