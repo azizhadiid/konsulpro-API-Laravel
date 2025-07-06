@@ -52,9 +52,9 @@ class User extends Authenticatable
         return $this->hasOne(UserProfile::class);
     }
 
-    public function konsultasis()
+    public function consultations()
     {
-        return $this->hasMany(Konsultasi::class);
+        return $this->hasMany(Consultation::class);
     }
 
     public function artikel()
