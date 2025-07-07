@@ -31,10 +31,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/artikels/{id}', [ArtikelController::class, 'update']); // Untuk update, menggunakan POST dengan _method=PUT
     Route::delete('/artikels/{id}', [ArtikelController::class, 'destroy']); // Untuk menghapus artikel
 
-    Route::post('/consultation', [ConsultationController::class, 'create']);
+    // Route::post('/consultation', [ConsultationController::class, 'create']);
 
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
     Route::post('/send-contact-email', [ContactController::class, 'sendContactEmail']);
+
+    // routes/untuk tes payment
+    Route::post('/payment-token', [ConsultationController::class, 'getSnapToken']);
+    Route::post('/consultation/save', [ConsultationController::class, 'saveAfterPayment']);
 });
