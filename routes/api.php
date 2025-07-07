@@ -38,7 +38,8 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     Route::post('/send-contact-email', [ContactController::class, 'sendContactEmail']);
 
-    // routes/untuk tes payment
+    // routes/untuk payment
     Route::post('/payment-token', [ConsultationController::class, 'getSnapToken']);
     Route::post('/consultation/save', [ConsultationController::class, 'saveAfterPayment']);
+    Route::get('/consultation/history', [ConsultationController::class, 'history']);
 });
