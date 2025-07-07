@@ -42,4 +42,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/payment-token', [ConsultationController::class, 'getSnapToken']);
     Route::post('/consultation/save', [ConsultationController::class, 'saveAfterPayment']);
     Route::get('/consultation/history', [ConsultationController::class, 'history']);
+    Route::get('/consultation/verifikasi', [ConsultationController::class, 'getAdminConsultations']);
+    Route::put('/consultations/{id}/status', [ConsultationController::class, 'updateConsultationStatus']);
 });

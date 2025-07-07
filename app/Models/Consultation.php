@@ -22,4 +22,9 @@ class Consultation extends Model
         'payment_status',
         'midtrans_response',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }
