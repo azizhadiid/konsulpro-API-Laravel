@@ -4,6 +4,7 @@ use App\Http\Controllers\ArtikelController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ConsultationController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserProfileController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -44,4 +45,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/consultation/history', [ConsultationController::class, 'history']);
     Route::get('/consultation/verifikasi', [ConsultationController::class, 'getAdminConsultations']);
     Route::put('/consultations/{id}/status', [ConsultationController::class, 'updateConsultationStatus']);
+    Route::get('/dashboard', [DashboardController::class, 'getAdminDashboardData']);
 });
