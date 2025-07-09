@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\RegisterRequest;
 use App\Models\User;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
@@ -17,18 +18,13 @@ class AuthController extends Controller
         return response()->json($request->user());
     }
 
-    public function register(Request $request)
+    public function register(RegisterRequest $request) // Use RegisterRequest here
     {
-        $fields = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users',
-            'password' => 'required|string|min:6|confirmed',
-        ]);
-
+        // Validasi sudah ditangani oleh RegisterRequest
         $user = User::create([
-            'name' => $fields['name'],
-            'email' => $fields['email'],
-            'password' => bcrypt($fields['password']),
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password), // Use Hash::make()
         ]);
 
         return response()->json([
