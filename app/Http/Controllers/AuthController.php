@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\RegisterRequest;
 use App\Models\User;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use App\Http\Requests\LoginRequest;
 use Illuminate\Support\Facades\Hash;
+use App\Http\Requests\RegisterRequest;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Validation\ValidationException;
@@ -33,37 +34,36 @@ class AuthController extends Controller
         ], 201);
     }
 
-    public function login(Request $request)
+    public function login(LoginRequest $request) // Gunakan LoginRequest di sini
     {
-        $fields = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required|string',
-        ]);
+        // Validasi sudah ditangani oleh LoginRequest
+        $user = User::where('email', $request->email)->first();
 
-        $user = User::where('email', $fields['email'])->first();
-
-        if (!$user || !Hash::check($fields['password'], $user->password)) {
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            // Menggunakan ValidationException untuk respons 422 yang konsisten
             throw ValidationException::withMessages([
-                'email' => ['Email atau password salah.'],
+                'email' => ['Email atau password salah.'], // Pesan error generik untuk keamanan
             ]);
         }
+
+        // Hapus token lama untuk user ini jika Anda ingin hanya satu token aktif per perangkat/sesi
+        // $user->tokens()->where('name', 'userToken')->delete(); // Hapus token dengan nama 'userToken'
 
         // Buat token baru
         $token = $user->createToken('userToken')->plainTextToken;
 
         return response()->json([
             'message' => 'Login berhasil',
-            'user' => $user,
+            'user' => $user, // Laravel akan otomatis menyembunyikan 'password' karena ada di $hidden
             'token' => $token
         ]);
     }
 
     public function logout(Request $request)
     {
-        // frontend cukup hapus token sendiri
-        return response()->json([
-            'message' => 'Logout berhasil'
-        ]);
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->json(['message' => 'Logout berhasil.']);
     }
 
     public function forgot(Request $request)
