@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Hash;
 use App\Http\Requests\RegisterRequest;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Auth\Events\PasswordReset;
+use App\Http\Requests\ResetPasswordRequest;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -78,28 +79,28 @@ class AuthController extends Controller
     }
 
     // Reset password berdasarkan token dari email
-    public function reset(Request $request)
+    public function reset(ResetPasswordRequest $request) // Menggunakan ResetPasswordRequest
     {
-        $request->validate([
-            'token' => 'required',
-            'email' => 'required|email',
-            'password' => 'required|confirmed|min:8',
-        ]);
-
+        // Validasi sudah ditangani oleh ResetPasswordRequest
         $status = Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
             function (User $user, string $password) {
                 $user->forceFill([
                     'password' => Hash::make($password),
-                    'remember_token' => Str::random(60),
+                    'remember_token' => Str::random(60), // Menghasilkan remember_token baru
                 ])->save();
 
-                event(new PasswordReset($user));
+                event(new PasswordReset($user)); // Memicu event PasswordReset
             }
         );
 
-        return $status === Password::PASSWORD_RESET
-            ? response()->json(['message' => 'Password berhasil direset'])
-            : response()->json(['message' => __($status)], 400);
+        if ($status === Password::PASSWORD_RESET) {
+            return response()->json(['message' => 'Password berhasil direset'], 200);
+        }
+
+        // Jika token tidak valid, email tidak ditemukan, atau masalah lain
+        throw ValidationException::withMessages([
+            'email' => [__($status)], // Menggunakan pesan dari Laravel
+        ]);
     }
 }
