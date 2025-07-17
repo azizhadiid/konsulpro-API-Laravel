@@ -65,6 +65,12 @@ class ConsultationController extends Controller
                 'success' => true,
                 'data' => $consultations,
                 'stats' => $stats,
+                'user_info' => [ // PASTIKAN BAGIAN INI ADA DI KODE ANDA
+                    'id' => $user->id,
+                    'name' => $user->name, // Ini yang akan mengisi user?.name di frontend
+                    'email' => $user->email,
+                    // Tambahkan properti user lain yang relevan jika diperlukan oleh frontend
+                ],
                 'message' => 'Data berhasil diambil'
             ]);
         } catch (\Exception $e) {
