@@ -1,28 +1,25 @@
 <?php
 
-use App\Http\Controllers\ArtikelController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\ConsultationController;
+use App\Http\Controllers\RatingController;
+use App\Http\Controllers\ArtikelController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserProfileController;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ConsultationController;
 
 // Auth
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
-Route::post('logout', [AuthController::class, 'logout']);
 Route::post('/forgot-password', [AuthController::class, 'forgot']);
 Route::post('/reset-password', [AuthController::class, 'reset']);
-Route::middleware('auth:sanctum')->post('/logout', function (Request $request) {
-    $request->user()->currentAccessToken()->delete();
-    return response()->json(['message' => 'Logged out successfully']);
-});
 
 
 // System
 Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/profile', [UserProfileController::class, 'show']);
     Route::post('/profile', [UserProfileController::class, 'update']);
 
@@ -46,4 +43,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/consultation/verifikasi', [ConsultationController::class, 'getAdminConsultations']);
     Route::put('/consultations/{id}/status', [ConsultationController::class, 'updateConsultationStatus']);
     Route::get('/dashboard', [DashboardController::class, 'getAdminDashboardData']);
+
+    Route::post('/ratings', [RatingController::class, 'store']); // Mengirim rating baru
+    Route::get('/ratings', [RatingController::class, 'index']); // Mengambil daftar rating dan statistik
 });
