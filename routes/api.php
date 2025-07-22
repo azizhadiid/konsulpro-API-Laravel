@@ -44,6 +44,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/consultation/verifikasi', [ConsultationController::class, 'getAdminConsultations']);
     Route::put('/consultations/{id}/status', [ConsultationController::class, 'updateConsultationStatus']);
     Route::get('/dashboard', [DashboardController::class, 'getAdminDashboardData']);
+    Route::get('/dashboard/generate-report', [DashboardController::class, 'generateReport']);
 
     Route::post('/ratings', [RatingController::class, 'store']); // Mengirim rating baru
     Route::get('/ratings', [RatingController::class, 'index']); // Mengambil daftar rating dan statistik
