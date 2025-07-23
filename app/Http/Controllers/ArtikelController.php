@@ -64,6 +64,12 @@ class ArtikelController extends Controller
      */
     public function store(Request $request)
     {
+        if (!$request->user() || $request->user()->role !== 'admin') {
+            return response()->json([
+                'message' => 'Forbidden: Anda tidak memiliki akses untuk menambah artikel.'
+            ], 403);
+        }
+
         // 1. Validasi Request
         $validatedData = $request->validate([
             'judul' => 'required|string|max:255',
