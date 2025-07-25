@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Artikel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
@@ -250,30 +251,40 @@ class ArtikelController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Request $request, string $id)
     {
-        $artikel = Artikel::find($id);
+        try {
+            $artikel = Artikel::find($id);
 
-        if (!$artikel) {
-            return response()->json(['message' => 'Artikel not found.'], 404);
+            if (!$artikel) {
+                return response()->json(['message' => 'Artikel not found.'], 404);
+            }
+
+            // Opsional: Pastikan hanya user pemilik yang bisa menghapus artikelnya sendiri
+            if ($artikel->user_id !== Auth::id()) {
+                return response()->json(['message' => 'Unauthorized to delete this article.'], 403);
+            }
+
+            // Hapus file gambar terkait dari server
+            if ($artikel->foto && file_exists(public_path('img/artikel/' . $artikel->foto))) {
+                unlink(public_path('img/artikel/' . $artikel->foto));
+            }
+            // Atau jika menggunakan Storage Facade:
+            // if ($artikel->foto && Storage::disk('public')->exists('img/artikel/' . $artikel->foto)) {
+            //     Storage::disk('public')->delete('img/artikel/' . $artikel->foto);
+            // }
+
+            $artikel->delete(); // Hapus artikel dari database
+
+            return response()->json(['message' => 'Artikel berhasil dihapus!'], 200); // Atau 204 No Content
+
+        } catch (\Exception $e) {
+            Log::error('Error deleting article:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'article_id' => $id,
+            ]);
+            return response()->json(['message' => 'Terjadi kesalahan pada server saat menghapus artikel.'], 500);
         }
-
-        // Opsional: Pastikan hanya user pemilik yang bisa menghapus artikelnya sendiri
-        if ($artikel->user_id !== Auth::id()) {
-            return response()->json(['message' => 'Unauthorized to delete this article.'], 403);
-        }
-
-        // Hapus file gambar terkait dari server
-        if ($artikel->foto && file_exists(public_path('img/artikel/' . $artikel->foto))) {
-            unlink(public_path('img/artikel/' . $artikel->foto));
-        }
-        // Atau jika menggunakan Storage Facade:
-        // if ($artikel->foto && Storage::disk('public')->exists('img/artikel/' . $artikel->foto)) {
-        //     Storage::disk('public')->delete('img/artikel/' . $artikel->foto);
-        // }
-
-        $artikel->delete(); // Hapus artikel dari database
-
-        return response()->json(['message' => 'Artikel berhasil dihapus!'], 200); // Atau 204 No Content
     }
 }
