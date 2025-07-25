@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class ArtikelController extends Controller
 {
@@ -169,83 +170,99 @@ class ArtikelController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        // Temukan artikel yang akan diperbarui
-        $artikel = Artikel::find($id);
+        try {
+            // Temukan artikel yang akan diperbarui
+            $artikel = Artikel::find($id);
 
-        if (!$artikel) {
-            return response()->json(['message' => 'Artikel not found.'], 404);
-        }
-
-        // Opsional: Pastikan hanya user pemilik yang bisa mengedit artikelnya sendiri
-        // Jika Anda menggunakan Passport/Sanctum dan user_id di tabel artikel, ini penting
-        if ($artikel->user_id !== Auth::id()) {
-            return response()->json(['message' => 'Unauthorized to update this article.'], 403);
-        }
-
-        // 1. Validasi Request
-        $validatedData = $request->validate([
-            'judul' => 'required|string|max:255',
-            'deskripsi' => 'nullable|string',
-            'kategori' => 'required|string|max:255',
-            // Pastikan 'tag' juga divalidasi karena ada di frontend
-            'tanggal_publish' => 'required|date',
-            // 'foto' bisa nullable jika tidak ada perubahan, atau 'sometimes' jika hanya diisi saat ada file
-            // 'foto' => 'sometimes|nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Gunakan 'sometimes' jika field ini hanya dikirim saat ada perubahan
-            // Atau jika selalu dikirim tapi bisa null (seperti yang Anda pakai sekarang):
-            'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif',
-        ]);
-
-        // 2. Penanganan Upload Gambar
-        $oldFoto = $artikel->foto; // Simpan nama foto lama
-
-        if ($request->hasFile('foto')) {
-            // Ada gambar baru di-upload
-
-            // Hapus gambar lama jika ada
-            if ($oldFoto && File::exists(public_path('img/artikel/' . $oldFoto))) {
-                File::delete(public_path('img/artikel/' . $oldFoto));
+            if (!$artikel) {
+                return response()->json(['message' => 'Artikel not found.'], 404);
             }
 
-            $gambar = $request->file('foto');
-            // Pastikan nama file unik untuk menghindari konflik
-            $gambarNama = time() . '_' . uniqid() . '.' . $gambar->getClientOriginalExtension();
-            $destinationPath = public_path('img/artikel');
-
-            // Pastikan folder tujuan ada
-            if (!File::exists($destinationPath)) {
-                File::makeDirectory($destinationPath, 0755, true);
+            // Opsional: Pastikan hanya user pemilik yang bisa mengedit artikelnya sendiri
+            // Jika Anda menggunakan Passport/Sanctum dan user_id di tabel artikel, ini penting
+            if ($artikel->user_id !== Auth::id()) {
+                return response()->json(['message' => 'Unauthorized to update this article.'], 403);
             }
 
-            $gambar->move($destinationPath, $gambarNama);
-            $artikel->foto = $gambarNama; // Update nama foto di model
-        } elseif ($request->input('foto_changed_to_null')) {
-            // Logika untuk menghapus gambar yang sudah ada jika frontend mengirimkan sinyal
-            // bahwa gambar harus dihapus (misal: user menghapus gambar di form)
-            // Anda perlu menambahkan input tersembunyi di frontend, misal <input type="hidden" name="foto_changed_to_null" value="true/false">
-            if ($oldFoto && File::exists(public_path('img/artikel/' . $oldFoto))) {
-                File::delete(public_path('img/artikel/' . $oldFoto));
+            // 1. Validasi Request
+            $validatedData = $request->validate([
+                'judul' => 'required|string|max:255',
+                'deskripsi' => 'nullable|string',
+                'kategori' => 'required|string|max:255',
+                // Pastikan 'tag' juga divalidasi karena ada di frontend
+                'tanggal_publish' => 'required|date',
+                // 'foto' bisa nullable jika tidak ada perubahan, atau 'sometimes' jika hanya diisi saat ada file
+                // 'foto' => 'sometimes|nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Gunakan 'sometimes' jika field ini hanya dikirim saat ada perubahan
+                // Atau jika selalu dikirim tapi bisa null (seperti yang Anda pakai sekarang):
+                'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif',
+            ]);
+
+            // 2. Penanganan Upload Gambar
+            $oldFoto = $artikel->foto; // Simpan nama foto lama
+
+            if ($request->hasFile('foto')) {
+                // Ada gambar baru di-upload
+
+                // Hapus gambar lama jika ada
+                if ($oldFoto && File::exists(public_path('img/artikel/' . $oldFoto))) {
+                    File::delete(public_path('img/artikel/' . $oldFoto));
+                }
+
+                $gambar = $request->file('foto');
+                // Pastikan nama file unik untuk menghindari konflik
+                $gambarNama = time() . '_' . uniqid() . '.' . $gambar->getClientOriginalExtension();
+                $destinationPath = public_path('img/artikel');
+
+                // Pastikan folder tujuan ada
+                if (!File::exists($destinationPath)) {
+                    File::makeDirectory($destinationPath, 0755, true);
+                }
+
+                $gambar->move($destinationPath, $gambarNama);
+                $artikel->foto = $gambarNama; // Update nama foto di model
+            } elseif ($request->input('foto_changed_to_null')) {
+                // Logika untuk menghapus gambar yang sudah ada jika frontend mengirimkan sinyal
+                // bahwa gambar harus dihapus (misal: user menghapus gambar di form)
+                // Anda perlu menambahkan input tersembunyi di frontend, misal <input type="hidden" name="foto_changed_to_null" value="true/false">
+                if ($oldFoto && File::exists(public_path('img/artikel/' . $oldFoto))) {
+                    File::delete(public_path('img/artikel/' . $oldFoto));
+                }
+                $artikel->foto = null; // Set foto menjadi null di database
             }
-            $artikel->foto = null; // Set foto menjadi null di database
+            // Jika tidak ada file baru di-upload dan tidak ada indikasi untuk menghapus,
+            // maka foto yang sudah ada akan dipertahankan (tidak diubah).
+
+            // 3. Perbarui data artikel
+            $artikel->judul = $validatedData['judul'];
+            $artikel->deskripsi = $validatedData['deskripsi'];
+            $artikel->kategori = $validatedData['kategori'];
+            // Pastikan 'tag' juga diperbarui
+            $artikel->tanggal_publish = $validatedData['tanggal_publish'];
+
+            $artikel->save(); // Simpan perubahan ke database
+
+            // Tambahkan foto_url untuk respons agar frontend bisa langsung menampilkannya
+            $artikel->foto_url = $artikel->foto ? asset('img/artikel/' . $artikel->foto) : null;
+
+            return response()->json([
+                'message' => 'Artikel berhasil diperbarui!',
+                'artikel' => $artikel
+            ], 200); // 200 OK untuk update
+        } catch (ValidationException $e) {
+            Log::error('Validation Error updating article:', ['errors' => $e->errors(), 'request' => $request->all()]);
+            return response()->json([
+                'message' => 'Validasi gagal.',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error updating article:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'article_id' => $id,
+                'request_data' => $request->all(),
+            ]);
+            return response()->json(['message' => 'Terjadi kesalahan pada server saat memperbarui artikel.'], 500);
         }
-        // Jika tidak ada file baru di-upload dan tidak ada indikasi untuk menghapus,
-        // maka foto yang sudah ada akan dipertahankan (tidak diubah).
-
-        // 3. Perbarui data artikel
-        $artikel->judul = $validatedData['judul'];
-        $artikel->deskripsi = $validatedData['deskripsi'];
-        $artikel->kategori = $validatedData['kategori'];
-        // Pastikan 'tag' juga diperbarui
-        $artikel->tanggal_publish = $validatedData['tanggal_publish'];
-
-        $artikel->save(); // Simpan perubahan ke database
-
-        // Tambahkan foto_url untuk respons agar frontend bisa langsung menampilkannya
-        $artikel->foto_url = $artikel->foto ? asset('img/artikel/' . $artikel->foto) : null;
-
-        return response()->json([
-            'message' => 'Artikel berhasil diperbarui!',
-            'artikel' => $artikel
-        ], 200); // 200 OK untuk update
     }
 
     /**
