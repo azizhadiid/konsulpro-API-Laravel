@@ -20,32 +20,39 @@ Route::get('/top-ratings', [RatingController::class, 'getHighRatedTestimonials']
 
 // System
 Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/logout', [AuthController::class, 'logout']);
-    Route::get('/profile', [UserProfileController::class, 'show']);
-    Route::post('/profile', [UserProfileController::class, 'update']);
-
+    // Admin dan user
     Route::get('/artikels', [ArtikelController::class, 'index']);
-    Route::post('/artikels', [ArtikelController::class, 'store']);
-    Route::get('/artikels/{id}', [ArtikelController::class, 'show']); // Untuk mengambil data 1 artikel
-    Route::put('/artikels/{id}', [ArtikelController::class, 'update']); // Untuk update, menggunakan POST dengan _method=PUT
-    Route::delete('/artikels/{id}', [ArtikelController::class, 'destroy']); // Untuk menghapus artikel
+    Route::get('/artikels/{id}', [ArtikelController::class, 'show']);
 
-    // Route::post('/consultation', [ConsultationController::class, 'create']);
-
-    Route::get('/user', function (Request $request) {
-        return $request->user();
+    Route::middleware('user')->group(function () {
+        // User/Members
+        Route::post('/logout', [AuthController::class, 'logout']);
+        Route::get('/profile', [UserProfileController::class, 'show']);
+        Route::post('/profile', [UserProfileController::class, 'update']);
+        // Route::post('/consultation', [ConsultationController::class, 'create']);
+        Route::get('/user', function (Request $request) {
+            return $request->user();
+        });
+        // Kontak untuk members
+        Route::post('/send-contact-email', [ContactController::class, 'sendContactEmail']);
+        // Untuk Melakukan Konsultassi Members
+        Route::post('/payment-token', [ConsultationController::class, 'getSnapToken']);
+        Route::post('/consultation/save', [ConsultationController::class, 'saveAfterPayment']);
+        Route::get('/consultation/history', [ConsultationController::class, 'history']);
+        // Rating
+        Route::post('/ratings', [RatingController::class, 'store']); // Mengirim rating baru
+        Route::get('/ratings', [RatingController::class, 'index']); // Mengambil daftar rating dan statistik
     });
-    Route::post('/send-contact-email', [ContactController::class, 'sendContactEmail']);
 
-    // routes/untuk payment
-    Route::post('/payment-token', [ConsultationController::class, 'getSnapToken']);
-    Route::post('/consultation/save', [ConsultationController::class, 'saveAfterPayment']);
-    Route::get('/consultation/history', [ConsultationController::class, 'history']);
-    Route::get('/consultation/verifikasi', [ConsultationController::class, 'getAdminConsultations']);
-    Route::put('/consultations/{id}/status', [ConsultationController::class, 'updateConsultationStatus']);
-    Route::get('/dashboard', [DashboardController::class, 'getAdminDashboardData']);
-    Route::get('/dashboard/generate-report', [DashboardController::class, 'generateReport']);
-
-    Route::post('/ratings', [RatingController::class, 'store']); // Mengirim rating baru
-    Route::get('/ratings', [RatingController::class, 'index']); // Mengambil daftar rating dan statistik
+    Route::middleware('admin')->group(function () {
+        // Admin
+        Route::get('/consultation/verifikasi', [ConsultationController::class, 'getAdminConsultations']);
+        Route::put('/consultations/{id}/status', [ConsultationController::class, 'updateConsultationStatus']);
+        Route::get('/dashboard', [DashboardController::class, 'getAdminDashboardData']);
+        Route::get('/dashboard/generate-report', [DashboardController::class, 'generateReport']);
+        // Artikel
+        Route::post('/artikels', [ArtikelController::class, 'store']);
+        Route::put('/artikels/{id}', [ArtikelController::class, 'update']); // Untuk update, menggunakan POST dengan _method=PUT
+        Route::delete('/artikels/{id}', [ArtikelController::class, 'destroy']); // Untuk menghapus artikel
+    });
 });

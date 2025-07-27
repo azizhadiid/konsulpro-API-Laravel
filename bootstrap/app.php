@@ -15,6 +15,12 @@ return Application::configure(basePath: dirname(__DIR__))
         // Tambahkan middleware CORS di sini secara benar
         $middleware->append(\App\Http\Middleware\CorsMiddleware::class);
 
+        // Tambahkan route middleware custom kamu di sini
+        $middleware->alias([
+            'admin' => \App\Http\Middleware\AdminMiddleware::class,
+            'user' => \App\Http\Middleware\UserMiddleware::class,
+        ]);
+
         // ✅ Middleware Sanctum untuk API Token
         // $middleware->append(\Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class);
     })
