@@ -1,61 +1,171 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 📘 KonsulPro API (Laravel)
+Ini adalah repositori backend (API) untuk platform KonsulPro, yang dibangun menggunakan Laravel. API ini bertanggung jawab untuk mengelola semua data, otentikasi pengguna, otorisasi, serta menyediakan endpoint untuk fungsionalitas inti platform seperti manajemen artikel, permintaan konsultasi, pemrosesan pembayaran, dan laporan admin. API ini dirancang untuk berinteraksi dengan aplikasi frontend (misalnya, yang dibangun dengan Next.js) melalui HTTP requests.
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## 📌 Fitur Utama
+### Fitur Utama API
+- Autentikasi & Otorisasi:
+  - Pendaftaran Pengguna Baru.
+  - Login Pengguna (menggunakan Laravel Sanctum untuk token API).
+  - Logout Pengguna.
+  - Lupa dan Reset Password (melalui email).
+  - Middleware berbasis peran untuk melindungi rute admin.
+- Manajemen Profil Pengguna:
+  - Melihat detail profil pengguna.
+  - Memperbarui informasi profil pengguna, termasuk foto profil.
+- Manajemen Konsultasi:
+  - Mengajukan permintaan konsultasi baru.
+  - Integrasi dengan gateway pembayaran (Midtrans Snap) untuk menghasilkan token pembayaran.
+  - Menyimpan status pembayaran setelah notifikasi dari gateway pembayaran.
+  - Melihat riwayat konsultasi pengguna.
+  - Admin: Melihat daftar konsultasi dengan paginasi, pencarian, dan filter status.
+  - Admin: Memperbarui status konsultasi (pending, paid, completed, cancelled).
+- Manajemen Artikel (Blog):
+  - Melihat daftar artikel (publik dan admin).
+  - Melihat detail satu artikel.
+  - Admin: Membuat, memperbarui, dan menghapus artikel.
+- Sistem Rating & Testimonial:
+  - Mengirim rating dan testimonial.
+  - Melihat daftar rating dan statistik.
+  - Melihat testimonial dengan rating tertinggi.
+- Sistem Kontak:
+  - Mengirim pesan kontak melalui email.
+- Dashboard Admin & Laporan:
+  - Menyediakan data statistik untuk dashboard admin.
+  - Menghasilkan laporan data (misalnya, daftar konsultasi) dalam format file.
 
-## About Laravel
+## 🚀 Teknologi yang Digunakan
+- Framework: Laravel 11+
+- Bahasa Pemrograman: PHP 8.2+
+- Database: MySQL 8.0+
+- Otentikasi API: Laravel Sanctum
+- Manajemen File: Laravel Storage Facade (untuk upload gambar profil dan artikel)
+- Seeder & Factory: Untuk data dummy pengembangan/pengujian
+- Middleware: Untuk otorisasi berbasis peran (AdminMiddleware, UserMiddleware)
+- Gateway Pembayaran: Midtrans Snap (integrasi backend)
+- Email: Konfigurasi SMTP (untuk reset password, pesan kontak)
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 📜 Persyaratan Sistem
+Pastikan Anda memiliki perangkat lunak berikut terinstal di sistem Anda:
+- PHP: v8.2 atau lebih tinggi
+- Composer: Versi terbaru
+- MySQL: v8.0 atau lebih tinggi (atau database relasional lain yang kompatibel)
+- Git: Versi terbaru
+- Web Server: Nginx atau Apache (atau gunakan php artisan serve untuk pengembangan)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 🛠️ Instalasi
+### 1. Clone Repository
+```bash
+git clone https://github.com/azizhadiid/konsulpro-API-Laravel.git
+cd konsulpro-project # Atau nama folder proyek Anda
+```
+### 2. Instal Dependensi Composer
+```bash
+composer install
+```
+### 3. Konfigurasi Environment dan generate application key
+```bash
+cp .env.example .env
+php artisan key:generate
+```
+### 4. Konfigurasi File .env
+Buka file .env dan sesuaikan konfigurasi berikut:
+- Database:
+    ```bash
+    DB_CONNECTION=mysql
+    DB_HOST=127.0.0.1
+    DB_PORT=3306
+    DB_DATABASE=konsulpro_db # Ganti dengan nama database Anda
+    DB_USERNAME=root # Ganti dengan username database Anda
+    DB_PASSWORD= # Ganti dengan password database Anda
+    ```
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- URL Aplikasi & Frontend:
+    ```bash
+    APP_URL=http://localhost:8000 # URL di mana API Laravel akan berjalan
+    FRONTEND_URL=http://localhost:3000 # URL frontend Next.js Anda (PENTING untuk link reset password)
+    ```
 
-## Learning Laravel
+- Konfigurasi Mail (untuk reset password dan kontak):
+    ```bash
+    MAIL_MAILER=smtp
+    MAIL_HOST=mailpit # Contoh: gunakan 'mailpit' untuk pengembangan lokal
+    MAIL_PORT=1025
+    MAIL_USERNAME=null
+    MAIL_PASSWORD=null
+    MAIL_ENCRYPTION=null
+    MAIL_FROM_ADDRESS="no-reply@konsulpro.com" # Ganti dengan email pengirim Anda
+    MAIL_FROM_NAME="${APP_NAME}"
+    ```
+- Konfigurasi Midtrans (jika diimplementasikan):
+    ```bash
+    MIDTRANS_SERVER_KEY=YOUR_MIDTRANS_SERVER_KEY
+    MIDTRANS_CLIENT_KEY=YOUR_MIDTRANS_CLIENT_KEY
+    MIDTRANS_IS_PRODUCTION=false # Set true jika di lingkungan produksi
+    ```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### 5. Migrasi Database dan Seeder
+Jalankan migrasi database untuk membuat tabel, dan seeder untuk mengisi data dummy.
+Ini akan menghapus semua data yang ada di database Anda dan mengisi ulang.
+```bash
+php artisan migrate:fresh --seed
+php artisan storage:link # Penting untuk membuat symlink ke folder public/storage untuk file yang diupload
+```
+### 6. Jalankan Server Laravel
+```bash
+php artisan serve
+```
+Server API akan berjalan di http://localhost:8000 (atau port lain yang ditentukan di .env).
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## 🚩Endpoint API
+Berikut adalah daftar singkat endpoint API yang tersedia:
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Autentikasi
+- POST /api/register - Mendaftar pengguna baru.
+- POST /api/login - Login pengguna dan mendapatkan token Sanctum.
+- POST /api/logout - Logout pengguna (membutuhkan token).
+- POST /api/forgot-password - Mengirim link reset password ke email.
+- POST /api/reset-password - Mereset password pengguna dengan token.
+- GET /api/user - Mendapatkan informasi pengguna yang sedang login (membutuhkan token).
 
-## Laravel Sponsors
+Profil Pengguna
+- GET /api/profile - Mendapatkan detail profil pengguna yang sedang login (membutuhkan token).
+- POST /api/profile - Memperbarui detail profil pengguna (membutuhkan token, mendukung multipart/form-data untuk foto).
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+Konsultasi
+- POST /api/payment-token - Mendapatkan token pembayaran Midtrans Snap (membutuhkan token).
+- POST /api/consultation/save - Menyimpan data konsultasi setelah pembayaran (membutuhkan token).
+- GET /api/consultation/history - Mendapatkan riwayat konsultasi pengguna (membutuhkan token).
 
-### Premium Partners
+Konsultasi (Admin - Membutuhkan peran admin)
+- GET /api/consultation/verifikasi - Mendapatkan daftar konsultasi dengan paginasi, pencarian (search), dan filter status (status=pending|paid|completed|cancelled|all) (membutuhkan token admin).
+- PUT /api/consultations/{id}/status - Memperbarui status konsultasi (membutuhkan token admin).
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+Artikel
+- GET /api/artikels - Mendapatkan daftar semua artikel (publik dan admin).
+- GET /api/artikels/{id} - Mendapatkan detail satu artikel.
 
-## Contributing
+Artikel (Admin - Membutuhkan peran admin)
+- POST /api/artikels - Membuat artikel baru (membutuhkan token admin, mendukung multipart/form-data).
+- POST /api/artikels/{id} - Memperbarui artikel (menggunakan _method=PUT untuk spoofing, membutuhkan token admin, mendukung multipart/form-data).
+- DELETE /api/artikels/{id} - Menghapus artikel (membutuhkan token admin).
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Rating & Testimonial
+- POST /api/ratings - Mengirim rating dan testimonial baru (membutuhkan token).
+- GET /api/ratings - Mendapatkan daftar semua rating dan statistik terkait.
+- GET /api/top-ratings - Mendapatkan testimonial dengan rating tertinggi.
 
-## Code of Conduct
+Kontak
+- POST /api/send-contact-email - Mengirim pesan kontak ke admin (membutuhkan token).
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Dashboard Admin (Membutuhkan peran admin)
+- GET /api/dashboard - Mendapatkan data statistik untuk dashboard admin (membutuhkan token admin).
+- GET /api/dashboard/generate-report - Menghasilkan laporan data (membutuhkan token admin).
 
-## Security Vulnerabilities
+## 🖥️ Pengujian API (Menggunakan Postman / Insomnia)
+1. Login Admin: Lakukan POST request ke http://localhost:8000/api/login dengan email: admin@example.com dan password: password. Simpan token yang dikembalikan.
+2. Gunakan Token: Sertakan token ini di header Authorization: Bearer <YOUR_TOKEN> untuk semua request ke endpoint yang dilindungi.
+3. Uji Endpoint Admin: Coba akses endpoint seperti /api/consultation/verifikasi atau /api/dashboard dengan token admin. Anda akan mendapatkan 403 Forbidden jika menggunakan token user biasa.
+4. Uji Endpoint User: Coba akses /api/profile atau /api/consultation/history dengan token user biasa.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## 📬 Kontak
+Jika kamu tertarik untuk bekerja sama atau memiliki pertanyaan, silakan hubungi melalui form kontak di website ini atau email langsung ke azizalhadiid88@gmail.com.
